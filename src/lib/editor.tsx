@@ -4,19 +4,21 @@ import EDITOR_TOOLS, { NOTEPAD_TOOLS } from "./editor-tools";
 
 //props
 type Props = {
-  data?: OutputData;
   setInstance: React.Dispatch<React.SetStateAction<EditorJS | undefined>>;
   onChange(val: OutputData): void;
   holder: string;
   isPad?: boolean;
+  data?: OutputData;
+  id: string;
 };
 
 const Editor = ({
-  data,
   onChange,
   holder,
   setInstance,
   isPad = false,
+  id,
+  data,
 }: Props) => {
   const ref = useRef<EditorJS>();
 
@@ -87,14 +89,14 @@ const Editor = ({
     }
 
     //add a return function handle cleanup
-    return () => {
-      if (ref.current && ref.current.destroy) {
-        ref.current.destroy();
-      }
-    };
-  }, []);
+    // return () => {
+    //   if (ref.current && ref.current.destroy) {
+    //     ref.current.destroy();
+    //   }
+    // };
+  }, [id]);
 
-  return <div id={holder} className="prose max-w-full h-full" />;
+  return <div id={holder} />;
 };
 
 export default memo(Editor);

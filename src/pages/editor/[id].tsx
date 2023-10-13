@@ -20,11 +20,25 @@ import { BsFillClipboardFill } from "react-icons/bs";
 import { LuBold, LuItalic, LuUnderline, LuStrikethrough } from "react-icons/lu";
 import { AiOutlineMinus, AiOutlinePlus } from "react-icons/ai";
 import { useRouter } from "next/router";
+import { useAppContext } from "@/pages/_app";
+import useAblyProvider from "@/lib/useAblyProvider";
+import { AblyMessageCallback } from "ably/react";
+import { Types } from "ably";
 
 const Editor = dynamic(() => import("@/lib/editor"), { ssr: false });
 
 const EditorPage: NextPage = () => {
   const { query } = useRouter();
+  const { state, updateTrextContent } = useAppContext();
+  const [usePublishAbly] = useAblyProvider({
+    docId: query.id as string,
+    userId: state.user && state.user.id,
+    callback: (value: Types.Message) => {
+      updateTrextContent(query.id as string, JSON.stringify(value.data));
+      setOutputData(value.data);
+      instance?.render(value.data);
+    },
+  });
 
   const fontSizes = [
     "10px",
@@ -45,18 +59,10 @@ const EditorPage: NextPage = () => {
     "90px",
   ];
 
-  const [outputData, setOutputData] = useState<OutputData>({
-    blocks: [
-      {
-        type: "paragraph",
-        data: {
-          text: query.id,
-        },
-      },
-    ],
-  });
+  const [outputData, setOutputData] = useState<OutputData>();
   const [title, setTitle] = useState<string>("Some thing for this");
   const [editTitle, setEditTitle] = useState<boolean>(false);
+  const [currId, setCurrId] = useState<string>(query.id as string);
   const [showBar, setShowBar] = useState<boolean>(true);
   const [instance, setInstance] = useState<EditorJS>();
   const [width, height] = useMediaQuery();
@@ -65,8 +71,9 @@ const EditorPage: NextPage = () => {
   }, []);
   const [fontSize, setFontSize] = React.useState(fontSizes[0]);
 
-  const onChange = (val: OutputData) => {
-    setOutputData(val);
+  const onChange = (value: OutputData) => {
+    updateTrextContent(query.id as string, JSON.stringify(value));
+    usePublishAbly(value);
   };
 
   React.useEffect(() => {
@@ -78,7 +85,23 @@ const EditorPage: NextPage = () => {
         setShowBar(true);
       }
     }
-  }, [width]);
+
+    if (state !== undefined) {
+      console.log(state.trexts);
+    }
+    if (state.trexts !== undefined) {
+      setTitle(state.trexts.filter((val) => val.id == currId)[0].title);
+      setOutputData(
+        JSON.parse(state.trexts.filter((val) => val.id == currId)[0].content),
+      );
+    }
+
+    if (instance) {
+      instance.render(
+        JSON.parse(state.trexts.filter((val) => val.id == currId)[0].content),
+      );
+    }
+  }, [width, currId, instance]);
 
   const copy = () => {
     instance?.emit("copy", "");
@@ -105,19 +128,21 @@ const EditorPage: NextPage = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-row gap-0">
-      <EditorBar showBar={showBar} editor={instance!} />
+    <div className="w-full h-full flex flex-row overflow-hidden">
+      <EditorBar focusId={currId} showBar={showBar} changeFocus={setCurrId} />
       <Divider orientation="vertical" />
-      <div className="h-full w-full flex flex-col items-center">
-        <AppBar
-          setShowBar={setShowBar}
-          title={title}
-          setTitle={setTitle}
-          editTitle={editTitle}
-          setEditTitle={setEditTitle}
-        />
+      <div className="h-full w-full flex flex-col items-center justify-start">
+        <div className="h-12 w-full">
+          <AppBar
+            setShowBar={setShowBar}
+            title={state.trexts ? title : ""}
+            setTitle={setTitle}
+            editTitle={editTitle}
+            setEditTitle={setEditTitle}
+          />
+        </div>
         <Divider orientation="horizontal" />
-        <div className="w-full h-full flex flex-col gap-4 items-center">
+        <div className="w-full h-min flex flex-col gap-4 items-center">
           <div className="h-16 w-full flex flex-row px-4 gap-4 items-center">
             <ButtonGroup size="lg" isIconOnly variant="flat">
               <Button>
@@ -181,13 +206,15 @@ const EditorPage: NextPage = () => {
               <AiOutlinePlus />
             </Button>
           </div>
-          <div className="h-auto lg:w-2/4 w-[80%] p-6 border-gray-300 border-1 rounded-md mt-4 flex flex-col gap-4">
-            <Editor
-              holder="editor"
-              onChange={onChange}
-              data={outputData}
-              setInstance={handleInstance}
-            />
+          <div className="h-[75%] lg:w-2/4 w-[80%] p-3 border-gray-300 border-1 rounded-md overflow-y-scroll">
+            {outputData ? (
+              <Editor
+                id={currId}
+                holder="editor"
+                onChange={onChange}
+                setInstance={handleInstance}
+              />
+            ) : undefined}
           </div>
         </div>
       </div>

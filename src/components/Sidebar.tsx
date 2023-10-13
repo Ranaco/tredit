@@ -4,10 +4,11 @@ import { pacifico } from "./layout/main";
 import { GoHomeFill } from "react-icons/go";
 import { TbCategoryFilled } from "react-icons/tb";
 import { MdNotificationsActive } from "react-icons/md";
-import { BsFillGearFill, BsGearFill } from "react-icons/bs";
+import { BsFillGearFill } from "react-icons/bs";
 import { IconType } from "react-icons";
 import { AiTwotoneEdit } from "react-icons/ai";
 import { Avatar, AvatarIcon, Tooltip } from "@nextui-org/react";
+import { useAppContext } from "@/pages/_app";
 
 interface SidebarProps {
   router: NextRouter;
@@ -43,6 +44,8 @@ const IconButton: React.FC<IconProps> = ({
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ router }) => {
+  const { state } = useAppContext();
+
   const navigate = (route: string): void => {
     router.push(route);
   };
@@ -62,7 +65,9 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
           icon={AiTwotoneEdit}
           onClick={(val: string) => navigate(val)}
           title="Editor"
-          path="/editor/0"
+          path={`/editor/${
+            state.trexts && state.trexts.length > 0 ? state.trexts[0].id : 0
+          }`}
           activePath={router.pathname}
         />
         <IconButton
@@ -99,7 +104,8 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
           <Avatar
             className="cursor-pointer"
             onClick={() => router.push("/profile")}
-            icon={<AvatarIcon />}
+            src={state.user ? state.user.user_metadata.avatar_url : ""}
+            icon={state.user ? undefined : <AvatarIcon />}
             classNames={{
               icon: "text-black/80",
             }}

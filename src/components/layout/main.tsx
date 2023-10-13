@@ -30,7 +30,7 @@ const Main: React.FC<MainProps> = ({ router, children }) => {
         <title>TrEdit</title>
       </Head>
       <div
-        className={`w-full h-full flex flex-row overflow-hidden ${inter.className}`}
+        className={`w-full h-full flex flex-row overflow-x-hidden ${inter.className}`}
       >
         <Sidebar router={router} />
         <Divider orientation="vertical" />

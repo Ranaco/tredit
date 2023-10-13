@@ -6,7 +6,9 @@ import Image from "next/image";
 import { pacifico } from "@/components/layout/main";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import supabase from "@/lib/supabase";
-import type { Provider } from "@supabase/supabase-js";
+import type { OAuthResponse, Provider } from "@supabase/supabase-js";
+import { useRouter } from "next/router";
+import { Context } from "../_app";
 
 type formStateType = {
   email: string;
@@ -19,15 +21,34 @@ const Login = () => {
     password: "",
   });
 
+  const { state, setState } = React.useContext(Context);
+
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (state.authenticated) {
+      router.replace("/home");
+    }
+  });
+
   const login = async (provider: Provider) => {
     try {
-      supabase.auth.signInWithOAuth({
+      const oAuthRes: OAuthResponse = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
           redirectTo: window.location.origin + "/home",
-          scopes: "email",
+          scopes: "repo gist notifications",
         },
       });
+
+      if (oAuthRes.error) {
+        console.log(oAuthRes.error);
+      } else if (oAuthRes.data) {
+        console.log(oAuthRes.data);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("token", JSON.stringify(true));
+        }
+      }
     } catch (err) {
       console.log(err);
     }
@@ -108,19 +129,21 @@ const Login = () => {
           </Button>
           <Divider dir="horizontal" />
           <Button
-            onClick={() => login("google")}
+            onClick={() => login("github")}
             fullWidth={false}
-            className={"flex flex-row justify-space-between h-16 w-52 text-md"}
+            className={
+              "flex flex-row justify-space-between h-16 w-52 text-md gap-4"
+            }
             startContent={
               <Image
-                src={"/images/google.png"}
+                src={"/images/github-mark.svg"}
                 alt="google"
                 height={30}
                 width={30}
               />
             }
           >
-            Sign in with Google
+            Sign in with GitHub
           </Button>
         </form>
       </div>

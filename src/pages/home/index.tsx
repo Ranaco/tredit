@@ -6,6 +6,8 @@ import { useRouter } from "next/router";
 import NoteWidget from "@/components/note-widget";
 import dynamic from "next/dynamic";
 import EditorJS, { OutputData } from "@editorjs/editorjs";
+import { Context } from "@/pages/_app";
+import SupabaseDB from "@/lib/supabase-client";
 
 const Editor = dynamic(() => import("@/lib/editor"), { ssr: false });
 
@@ -13,24 +15,26 @@ const Home: React.FC = () => {
   const router = useRouter();
   const [data, setData] = React.useState<OutputData>();
   const [instance, setInstance] = React.useState<EditorJS>();
+  const { state } = React.useContext(Context);
+  const supabaseDB = new SupabaseDB();
 
-  const notesDataList = [
-    {
-      title: "Note 1",
-      content: "lorem ipsum dolor sit amet",
-      id: "1",
-    },
-    {
-      title: "Note 2",
-      content: "lorem ipsum dolor sit amet",
-      id: "2",
-    },
-    {
-      title: "Note 3",
-      content: "lorem ipsum dolor sit amet",
-      id: "3",
-    },
-  ];
+  const scratchPadChange = (value: OutputData) => {
+    supabaseDB.updateScratchPad(value);
+  };
+
+  const fetchScratchPad = async () => {
+    if (state.user) {
+      const data = await supabaseDB.read(
+        "title",
+        state.user.id + "-scratchpad",
+      );
+      setData(JSON.parse(data[0].content));
+    }
+  };
+
+  React.useEffect(() => {
+    fetchScratchPad();
+  }, [state.user]);
 
   return (
     <div className="w-full h-full">
@@ -52,21 +56,25 @@ const Home: React.FC = () => {
           >
             <div className="w-full h-16 flex items-center flex-row px-4">
               <Button
-                onClick={() => router.push(`/editor/${notesDataList[0].id}`)}
+                onClick={() => router.push(`/editor/${state.trexts[0].id}`)}
               >
                 Notes&nbsp;
                 <BsChevronRight />
               </Button>
             </div>
             <div className="flex flex-row gap-4 px-4 h-full">
-              {notesDataList.map((note, index) => (
-                <NoteWidget
-                  id={note.id}
-                  key={index}
-                  title={note.title}
-                  content={note.content}
-                />
-              ))}
+              {state.trexts
+                ? state.trexts.map((note, index) =>
+                    note.title == state.user.id + "-scratchpad" ? undefined : (
+                      <NoteWidget
+                        id={note.id}
+                        key={index}
+                        title={note.title}
+                        content={String(note.content).substring(0, 100)}
+                      />
+                    ),
+                  )
+                : undefined}
               <div
                 className="w-[250px] h-full flex flex-col gap-2 bg-white/10 p-4 rounded-xl items-center justify-center"
                 style={{
@@ -80,7 +88,7 @@ const Home: React.FC = () => {
             </div>
           </div>
           <div
-            className="h-full flex-[1] bg-gray-100/50 rounded-md"
+            className="h-full flex-[1] bg-gray-100/50 rounded-md p-4"
             style={{
               backdropFilter: "blur(30px)",
             }}
@@ -89,10 +97,10 @@ const Home: React.FC = () => {
               Scratch pad
             </div>
             <Editor
+              id={data?.version!}
               holder="editor"
-              onChange={console.log}
+              onChange={scratchPadChange}
               isPad
-              data={data}
               setInstance={setInstance}
             />
           </div>
