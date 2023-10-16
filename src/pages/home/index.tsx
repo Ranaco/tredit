@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import EditorJS, { OutputData } from "@editorjs/editorjs";
 import { Context } from "@/pages/_app";
 import SupabaseDB from "@/lib/supabase-client";
+import { Trext } from "@/lib/types";
 
 const Editor = dynamic(() => import("@/lib/editor"), { ssr: false });
 
@@ -15,7 +16,7 @@ const Home: React.FC = () => {
   const router = useRouter();
   const [data, setData] = React.useState<OutputData>();
   const [instance, setInstance] = React.useState<EditorJS>();
-  const { state } = React.useContext(Context);
+  const { state, setState } = React.useContext(Context);
   const supabaseDB = new SupabaseDB();
 
   const scratchPadChange = (value: OutputData) => {
@@ -24,12 +25,31 @@ const Home: React.FC = () => {
 
   const fetchScratchPad = async () => {
     if (state.user) {
-      const data = await supabaseDB.read(
+      const data = await supabaseDB.read<Trext[]>(
         "title",
         state.user.id + "-scratchpad",
       );
-      setData(JSON.parse(data[0].content));
+      setData(data[0] ? JSON.parse(data[0].content) : {});
     }
+  };
+
+  const createNewEditor = async () => {
+    const [id, payload] = await supabaseDB.createNewEditor();
+    setState((prev) => {
+      return {
+        ...prev,
+        trexts: [
+          {
+            ...payload,
+          },
+          ...prev.trexts,
+        ],
+      };
+    });
+
+    router.push(`/editor/${id}`).then(() => {
+      location.reload();
+    });
   };
 
   React.useEffect(() => {
@@ -64,16 +84,14 @@ const Home: React.FC = () => {
             </div>
             <div className="flex flex-row gap-4 px-4 h-full">
               {state.trexts
-                ? state.trexts.map((note, index) =>
-                    note.title == state.user.id + "-scratchpad" ? undefined : (
-                      <NoteWidget
-                        id={note.id}
-                        key={index}
-                        title={note.title}
-                        content={String(note.content).substring(0, 100)}
-                      />
-                    ),
-                  )
+                ? state.trexts.map((note, index) => (
+                    <NoteWidget
+                      id={note.id!}
+                      key={index}
+                      title={note.title}
+                      content={String(note.content).substring(0, 100)}
+                    />
+                  ))
                 : undefined}
               <div
                 className="w-[250px] h-full flex flex-col gap-2 bg-white/10 p-4 rounded-xl items-center justify-center"
@@ -81,7 +99,7 @@ const Home: React.FC = () => {
                   backdropFilter: "blur(10px)",
                 }}
               >
-                <Button isIconOnly>
+                <Button isIconOnly onClick={createNewEditor}>
                   <AiOutlinePlus />
                 </Button>
               </div>
@@ -99,6 +117,7 @@ const Home: React.FC = () => {
             <Editor
               id={data?.version!}
               holder="editor"
+              data={data}
               onChange={scratchPadChange}
               isPad
               setInstance={setInstance}

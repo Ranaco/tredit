@@ -2,7 +2,6 @@ import type { AblyMessageCallback } from "ably/react";
 import SupabaseDB from "./supabase-client";
 import * as React from "react";
 import * as ably from "ably";
-import { channel } from "diagnostics_channel";
 
 const clientID = process.env.NEXT_PUBLIC_APP_ID;
 const apiKey = process.env.NEXT_PUBLIC_ABLY_API;

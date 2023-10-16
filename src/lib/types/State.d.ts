@@ -1,6 +1,6 @@
 import * as React from "react";
-import type { User } from "@supabase/supabase-js";
 import type { Trext } from "./trext";
+import { SupabaseUser } from "./Users";
 
 export type StateType = {
   state: StateValue;
@@ -9,6 +9,6 @@ export type StateType = {
 };
 
 export type StateValue = {
-  user: User;
+  user: SupabaseUser;
   trexts: Trext[];
 };

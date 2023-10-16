@@ -30,7 +30,11 @@ const EditorBar: React.FC<EditorBarProps> = ({
           <FaStickyNote className="text-2xl" />
           <span className="text-2xl font-bold">Editor</span>
         </div>
-        <span className="text-gray-500 w-full justify-start">
+        <span
+          className={`text-gray-500 w-full justify-start ${
+            showBar ? "flex" : "hidden"
+          }`}
+        >
           {state.trexts && state.trexts.length} trexts
         </span>
       </div>
@@ -45,7 +49,7 @@ const EditorBar: React.FC<EditorBarProps> = ({
                 isPressable
                 onClick={() => {
                   router.push(`/editor/${e.id}`);
-                  changeFocus(e.id);
+                  changeFocus(e.id!);
                 }}
               >
                 <CardBody className="font-bold">

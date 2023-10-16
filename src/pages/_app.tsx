@@ -5,11 +5,12 @@ import Main from "@/components/layout/main";
 import { NextUIProvider } from "@nextui-org/react";
 import { Open_Sans } from "next/font/google";
 import supabase from "@/lib/supabase";
-import type { StateType, StateValue } from "@/lib/types";
+import type { StateType, StateValue, SupabaseUser } from "@/lib/types";
 import { User } from "@supabase/supabase-js";
 import SupabaseDB from "@/lib/supabase-client";
 import { AblyProvider } from "ably/react";
 import { Realtime } from "ably";
+import useSupabaseAuth from "@/lib/hooks/useAuthSetup";
 
 export const inter = Open_Sans({
   subsets: ["latin"],
@@ -30,7 +31,7 @@ const clientID = process.env.NEXT_PUBLIC_APP_ID;
 const apiKey = process.env.NEXT_PUBLIC_ABLY_API;
 
 export default function App({ Component, pageProps, router }: AppProps) {
-  const ably = new Realtime.Promise({ clientId: clientID, key: apiKey });
+  useSupabaseAuth();
 
   const getLayout = Component.getLayout;
   const [state, setState] = React.useState<StateValue>({} as StateValue);
@@ -50,12 +51,22 @@ export default function App({ Component, pageProps, router }: AppProps) {
 
   const handleData = async () => {
     const supabaseDB = new SupabaseDB();
-    const data = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const data: SupabaseUser[] = await supabaseDB.read<SupabaseUser[]>(
+      "id",
+      user?.id!,
+      {
+        table: "User",
+      },
+    );
 
     const trexts = await supabaseDB.fetchUserTrexts();
 
     setState({
-      user: data.data.user || ({} as User),
+      user: data[0] || ({} as SupabaseUser),
       trexts: trexts || [],
     });
   };
@@ -77,7 +88,7 @@ export default function App({ Component, pageProps, router }: AppProps) {
   };
 
   React.useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.onAuthStateChange(() => {
       handleAuth();
     });
     handleData();
@@ -85,24 +96,19 @@ export default function App({ Component, pageProps, router }: AppProps) {
 
   return getLayout ? (
     getLayout(
-      <AblyProvider client={ably}>
-        <Context.Provider value={{ state, setState, updateTrextContent }}>
-          <NextUIProvider>
-            <Component {...pageProps} />
-          </NextUIProvider>
-        </Context.Provider>
-        ,
-      </AblyProvider>,
-    )
-  ) : (
-    <AblyProvider client={ably}>
       <Context.Provider value={{ state, setState, updateTrextContent }}>
         <NextUIProvider>
-          <Main router={router}>
-            <Component {...pageProps} />
-          </Main>
+          <Component {...pageProps} />
         </NextUIProvider>
-      </Context.Provider>
-    </AblyProvider>
+      </Context.Provider>,
+    )
+  ) : (
+    <Context.Provider value={{ state, setState, updateTrextContent }}>
+      <NextUIProvider>
+        <Main router={router}>
+          <Component {...pageProps} />
+        </Main>
+      </NextUIProvider>
+    </Context.Provider>
   );
 }

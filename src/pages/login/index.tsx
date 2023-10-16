@@ -6,9 +6,7 @@ import Image from "next/image";
 import { pacifico } from "@/components/layout/main";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import supabase from "@/lib/supabase";
-import type { OAuthResponse, Provider } from "@supabase/supabase-js";
-import { useRouter } from "next/router";
-import { Context } from "../_app";
+import type { Provider } from "@supabase/supabase-js";
 
 type formStateType = {
   email: string;
@@ -21,34 +19,15 @@ const Login = () => {
     password: "",
   });
 
-  const { state, setState } = React.useContext(Context);
-
-  const router = useRouter();
-
-  React.useEffect(() => {
-    if (state.authenticated) {
-      router.replace("/home");
-    }
-  });
-
   const login = async (provider: Provider) => {
     try {
-      const oAuthRes: OAuthResponse = await supabase.auth.signInWithOAuth({
+      await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
           redirectTo: window.location.origin + "/home",
           scopes: "repo gist notifications",
         },
       });
-
-      if (oAuthRes.error) {
-        console.log(oAuthRes.error);
-      } else if (oAuthRes.data) {
-        console.log(oAuthRes.data);
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem("token", JSON.stringify(true));
-        }
-      }
     } catch (err) {
       console.log(err);
     }

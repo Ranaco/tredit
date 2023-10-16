@@ -104,8 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
           <Avatar
             className="cursor-pointer"
             onClick={() => router.push("/profile")}
-            src={state.user ? state.user.user_metadata.avatar_url : ""}
-            icon={state.user ? undefined : <AvatarIcon />}
+            src={state.user ? state.user.avatar_url : ""}
             classNames={{
               icon: "text-black/80",
             }}
