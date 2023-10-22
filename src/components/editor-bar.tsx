@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useAppContext } from "@/pages/_app";
-import { Card, CardBody, CardFooter } from "@nextui-org/react";
+import { Card, CardBody, CardFooter, Divider } from "@nextui-org/react";
 import { Trext } from "@/lib/types";
 import { useRouter } from "next/router";
 import { FaStickyNote } from "react-icons/fa";
@@ -31,6 +31,13 @@ const EditorBar: React.FC<EditorBarProps> = ({
           <span className="text-2xl font-bold">Editor</span>
         </div>
         <span
+          className={`text-gray-700 justify-start w-full font-bold ${
+            showBar ? "flex" : "hidden"
+          }`}
+        >
+          Personal
+        </span>
+        <span
           className={`text-gray-500 w-full justify-start ${
             showBar ? "flex" : "hidden"
           }`}
@@ -48,7 +55,52 @@ const EditorBar: React.FC<EditorBarProps> = ({
                 }`}
                 isPressable
                 onClick={() => {
-                  router.push(`/editor/${e.id}`);
+                  router.push({
+                    pathname: `/editor/${e.id}`,
+                    query: { shared: false },
+                  });
+                  changeFocus(e.id!);
+                }}
+              >
+                <CardBody className="font-bold">
+                  <p>{e.title}</p>
+                </CardBody>
+                <CardFooter className="text-gray-500">
+                  <p>{e.updated_at || e.created_at}</p>
+                </CardFooter>
+              </Card>
+            );
+          })
+        : undefined}
+      <Divider orientation="horizontal" />
+      <span
+        className={`text-gray-700 justify-start w-full font-bold ${
+          showBar ? "flex" : "hidden"
+        }`}
+      >
+        Shared
+      </span>
+      <span
+        className={`text-gray-500 w-full justify-start ${
+          showBar ? "flex" : "hidden"
+        }`}
+      >
+        {state.sharedTrexts && state.sharedTrexts.length} trexts
+      </span>
+      {state.sharedTrexts && state.sharedTrexts.length > 0
+        ? state.sharedTrexts.map((e: Trext) => {
+            return (
+              <Card
+                key={e.id}
+                className={`w-full ${
+                  e.id == focusId ? "bg-gray-200" : "bg-white"
+                }`}
+                isPressable
+                onClick={() => {
+                  router.push({
+                    pathname: `/editor/${e.id}`,
+                    query: { shared: true },
+                  });
                   changeFocus(e.id!);
                 }}
               >

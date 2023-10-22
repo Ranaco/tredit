@@ -9,6 +9,7 @@ import { IconType } from "react-icons";
 import { AiTwotoneEdit } from "react-icons/ai";
 import { Avatar, AvatarIcon, Tooltip } from "@nextui-org/react";
 import { useAppContext } from "@/pages/_app";
+import SupabaseDB from "@/lib/supabase-client";
 
 interface SidebarProps {
   router: NextRouter;
@@ -44,10 +45,35 @@ const IconButton: React.FC<IconProps> = ({
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ router }) => {
-  const { state } = useAppContext();
+  const { state, setState } = useAppContext();
+  const supabaseDB: SupabaseDB = new SupabaseDB();
+
+  const createNewEditor = async () => {
+    const [id, payload] = await supabaseDB.createNewEditor();
+    setState((prev) => {
+      return {
+        ...prev,
+        trexts: [
+          {
+            ...payload,
+          },
+          ...prev.trexts,
+        ],
+      };
+    });
+
+    router.push(`/editor/${id}`).then(() => {
+      location.reload();
+    });
+  };
 
   const navigate = (route: string): void => {
-    router.push(route);
+    const isCreateNewEditor = route === "/editor";
+    if (!isCreateNewEditor) {
+      router.push(route);
+    } else {
+      createNewEditor();
+    }
   };
 
   return (
@@ -66,7 +92,11 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
           onClick={(val: string) => navigate(val)}
           title="Editor"
           path={`/editor/${
-            state.trexts && state.trexts.length > 0 ? state.trexts[0].id : 0
+            state.trexts && state.trexts.length > 0
+              ? state.trexts[0].id
+              : state.sharedTrexts && state.sharedTrexts.length > 0
+              ? state.sharedTrexts[0].id + "?shared=true"
+              : "/editor"
           }`}
           activePath={router.pathname}
         />

@@ -4,7 +4,7 @@ import EDITOR_TOOLS, { NOTEPAD_TOOLS } from "./editor-tools";
 
 //props
 type Props = {
-  setInstance: React.Dispatch<React.SetStateAction<EditorJS | undefined>>;
+  setInstance?(val: EditorJS): void;
   onChange(val: OutputData): void;
   holder: string;
   isPad?: boolean;
@@ -13,9 +13,9 @@ type Props = {
 };
 
 const Editor = ({
+  setInstance,
   onChange,
   holder,
-  setInstance,
   isPad = false,
   id,
   data,
@@ -36,8 +36,8 @@ const Editor = ({
         hideToolbar: false,
         autofocus: !isPad,
         onReady: () => {
-          setInstance(ref.current);
           const block = ref.current?.blocks!;
+          setInstance && setInstance(ref.current!);
 
           ref.current?.on("copy", () => {
             navigator.clipboard.writeText(

@@ -6,11 +6,17 @@ interface NoteWidgetProps {
   title: string;
   content: string;
   id: string;
+  shared?: boolean;
 }
 
-const NoteWidget: React.FC<NoteWidgetProps> = ({ title, content, id }) => {
+const NoteWidget: React.FC<NoteWidgetProps> = ({
+  title,
+  content,
+  id,
+  shared = false,
+}) => {
   return (
-    <Link href={`/editor/${id}`} passHref>
+    <Link href={{ pathname: `/editor/${id}`, query: { shared } }} passHref>
       <Card
         className="w-[220px] h-full flex flex-col gap-2 bg-white/50 p-4 "
         style={{

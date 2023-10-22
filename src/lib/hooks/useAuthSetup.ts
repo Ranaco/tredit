@@ -12,11 +12,9 @@ const useSupabaseAuth = () => {
       const user = session?.user;
 
       if (user) {
-        const isRegistered = await supabaseDB.read<SupabaseUser>(
-          "id",
-          user.id,
-          { table: "User" },
-        );
+        const isRegistered: SupabaseUser[] = await supabaseDB.read<
+          SupabaseUser[]
+        >("id", user.id, { table: "User" });
 
         if ((isRegistered as SupabaseUser[]).length == 0) {
           const payload = {

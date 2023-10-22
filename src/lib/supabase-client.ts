@@ -1,5 +1,5 @@
 import supabase from "./supabase";
-import type { Trext } from "./types";
+import type { SupabaseUser, Trext } from "./types";
 
 interface SupabaseProps {
   upload: <T>(payload: T, options: { table?: string }) => Promise<boolean>;
@@ -11,23 +11,24 @@ interface SupabaseProps {
   fetchUserTrexts: () => Promise<Trext[]>;
   createNewEditor: () => Promise<[string, Trext]>;
   stream: (id: string, payload: any) => void;
-  update: (id: string, title: string) => void;
+  update: (
+    searchParam: string,
+    searchValue: string,
+    payload: any,
+    options: { table?: string },
+  ) => Promise<boolean>;
   updateScratchPad: (payload: any) => void;
 }
 
 class SupabaseDB implements SupabaseProps {
   upload = async <T>(payload: T, options: { table?: string } = {}) => {
-    const user = await supabase.auth.getUser();
-
     const { table = "trext_store" } = options;
 
-    if (user.data) {
-      const { error } = await supabase.from(table).insert(payload);
+    const { error } = await supabase.from(table).insert(payload);
 
-      if (error) {
-        console.error(error);
-        return false;
-      }
+    if (error) {
+      console.error(error);
+      return false;
     }
     return true;
   };
@@ -37,27 +38,41 @@ class SupabaseDB implements SupabaseProps {
     searchValue: string,
     options: { limit?: number; table?: string } = {},
   ) => {
-    const user = await supabase.auth.getUser();
-
     const { limit = 100, table = "trext_store" } = options;
 
-    if (user.data) {
-      const { data, error } = await supabase
-        .from(table)
-        .select()
-        .eq(searchParam, searchValue)
-        .limit(limit);
+    const { data, error } = await supabase
+      .from(table)
+      .select()
+      .eq(searchParam, searchValue)
+      .limit(limit);
 
-      if (error) {
-        throw error;
-      }
-      return (data as T) || ({} as T);
+    if (error) {
+      console.log(error);
+      throw error;
     }
-
-    return [];
+    return (data as T) || ({} as T);
   };
 
-  update = async (id: string, title: string) => {};
+  update = async (
+    searchParam: string,
+    searchValue: string,
+    payload: any,
+    options: { table?: string } = {},
+  ) => {
+    const { table = "trext_store" } = options;
+
+    const { data, error } = await supabase
+      .from(table)
+      .update(payload)
+      .eq(searchParam, searchValue);
+
+    if (error && !data) {
+      console.error(error);
+      return false;
+    }
+
+    return true;
+  };
 
   fetchUserTrexts = async (): Promise<Trext[]> => {
     const user = await supabase.auth.getUser();
@@ -79,8 +94,8 @@ class SupabaseDB implements SupabaseProps {
   };
 
   createNewEditor = async (): Promise<[string, Trext]> => {
-    const user = await supabase.auth.getUser();
-    if (user.data) {
+    const supabaseUser = await supabase.auth.getUser();
+    if (supabaseUser.data) {
       const payload: Trext = {
         title: "New Editor",
         content: JSON.stringify({
@@ -88,10 +103,24 @@ class SupabaseDB implements SupabaseProps {
           blocks: [],
           version: "2.17.0",
         }),
-        user_id: user.data.user?.id!,
+        user_id: supabaseUser.data.user?.id!,
         collaboraters: [],
         updated_at: new Date().toISOString(),
       };
+
+      const user: SupabaseUser[] = await this.read<SupabaseUser[]>(
+        "id",
+        supabaseUser.data.user?.id!,
+        {
+          table: "User",
+        },
+      );
+
+      if (user.length !== 0) {
+        this.update("id", supabaseUser.data.user?.id!, {
+          trext_count: user[0].trext_count + 1,
+        });
+      }
 
       const { data, error } = await supabase
         .from("trext_store")
@@ -138,7 +167,7 @@ class SupabaseDB implements SupabaseProps {
         user_id: user.data.user?.id,
       };
 
-      const { error } = await supabase.from("trext_store").insert(data);
+      const { error: _ } = await supabase.from("trext_store").insert(data);
     }
   };
 

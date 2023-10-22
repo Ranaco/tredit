@@ -5,7 +5,7 @@ import { Button } from "@nextui-org/react";
 import { useRouter } from "next/router";
 import NoteWidget from "@/components/note-widget";
 import dynamic from "next/dynamic";
-import EditorJS, { OutputData } from "@editorjs/editorjs";
+import type { OutputData } from "@editorjs/editorjs";
 import { Context } from "@/pages/_app";
 import SupabaseDB from "@/lib/supabase-client";
 import { Trext } from "@/lib/types";
@@ -15,7 +15,6 @@ const Editor = dynamic(() => import("@/lib/editor"), { ssr: false });
 const Home: React.FC = () => {
   const router = useRouter();
   const [data, setData] = React.useState<OutputData>();
-  const [instance, setInstance] = React.useState<EditorJS>();
   const { state, setState } = React.useContext(Context);
   const supabaseDB = new SupabaseDB();
 
@@ -120,18 +119,30 @@ const Home: React.FC = () => {
               data={data}
               onChange={scratchPadChange}
               isPad
-              setInstance={setInstance}
             />
           </div>
         </div>
         <div
-          className="flex-[1] bg-gray-100/50 rounded-md"
+          className="flex-[1] bg-gray-100/50 rounded-md flex flex-col gap-4 py-4 overflow-x-auto"
           style={{
             backdropFilter: "blur(30px)",
           }}
         >
           <div className="w-full h-16 flex items-center flex-row px-4">
-            Media
+            Shared
+          </div>
+          <div className="flex flex-row gap-4 px-4 h-full">
+            {state.sharedTrexts
+              ? state.sharedTrexts.map((note, index) => (
+                  <NoteWidget
+                    id={note.id!}
+                    key={index}
+                    title={note.title}
+                    content={String(note.content).substring(0, 100)}
+                    shared
+                  />
+                ))
+              : undefined}
           </div>
         </div>
       </div>

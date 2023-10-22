@@ -11,4 +11,5 @@ export type StateType = {
 export type StateValue = {
   user: SupabaseUser;
   trexts: Trext[];
+  sharedTrexts: Trext[];
 };

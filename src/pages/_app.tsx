@@ -5,12 +5,16 @@ import Main from "@/components/layout/main";
 import { NextUIProvider } from "@nextui-org/react";
 import { Open_Sans } from "next/font/google";
 import supabase from "@/lib/supabase";
-import type { StateType, StateValue, SupabaseUser } from "@/lib/types";
-import { User } from "@supabase/supabase-js";
+import {
+  Trext,
+  type StateType,
+  type StateValue,
+  type SupabaseUser,
+} from "@/lib/types";
 import SupabaseDB from "@/lib/supabase-client";
-import { AblyProvider } from "ably/react";
-import { Realtime } from "ably";
 import useSupabaseAuth from "@/lib/hooks/useAuthSetup";
+import { Realtime } from "ably";
+import { AblyProvider } from "ably/react";
 
 export const inter = Open_Sans({
   subsets: ["latin"],
@@ -32,6 +36,11 @@ const apiKey = process.env.NEXT_PUBLIC_ABLY_API;
 
 export default function App({ Component, pageProps, router }: AppProps) {
   useSupabaseAuth();
+
+  // const ably = new Realtime.Promise({
+  //   key: apiKey,
+  //   clientId: clientID,
+  // });
 
   const getLayout = Component.getLayout;
   const [state, setState] = React.useState<StateValue>({} as StateValue);
@@ -65,7 +74,21 @@ export default function App({ Component, pageProps, router }: AppProps) {
 
     const trexts = await supabaseDB.fetchUserTrexts();
 
+    const currUser = await supabaseDB.read<SupabaseUser[]>("id", user?.id!, {
+      table: "User",
+    });
+
+    const sharedTrextIds: string[] = currUser[0]?.collaborating || [];
+
+    let sharedTrexts: Trext[] = [];
+
+    for (let i of sharedTrextIds) {
+      var sharedTrext = await supabaseDB.read<Trext[]>("id", i);
+      sharedTrexts = [...sharedTrexts, sharedTrext[0]];
+    }
+
     setState({
+      sharedTrexts: sharedTrexts || [],
       user: data[0] || ({} as SupabaseUser),
       trexts: trexts || [],
     });
@@ -91,6 +114,15 @@ export default function App({ Component, pageProps, router }: AppProps) {
     supabase.auth.onAuthStateChange(() => {
       handleAuth();
     });
+
+    // ably.connection.on("connected", () => {
+    //   console.log("Connected");
+    // });
+    //
+    // ably.connection.on("update", (e) => {
+    //   console.log("Update", e);
+    // });
+
     handleData();
   }, []);
 
