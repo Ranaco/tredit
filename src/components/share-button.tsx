@@ -27,6 +27,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({ docId }) => {
   const [searchedUsers, setSearchedUsers] = React.useState<SupabaseUser[]>([]);
   const supabaseDB = new SupabaseDB();
   const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
+  const [payloads, setPayloads] = React.useState<SupabaseUser[]>([]);
+  const [sharedTrexts, setSharedTrexts] = React.useState<Trext[]>([]);
 
   const searchUsers = React.useCallback(async () => {
     const matchingUsers = userRes.filter((user) =>
@@ -47,39 +49,54 @@ const ShareButton: React.FC<ShareButtonProps> = ({ docId }) => {
   const share = async (id: string) => {
     const supabaseDB: SupabaseDB = new SupabaseDB();
 
-    const user: SupabaseUser[] = await supabaseDB.read<SupabaseUser[]>(
-      "id",
-      id,
-      {
+    try {
+      const user: SupabaseUser[] = await supabaseDB.read<SupabaseUser[]>(
+        "id",
+        id,
+        {
+          table: "User",
+        },
+      );
+
+      const trext: Trext[] = await supabaseDB.read<Trext[]>("id", docId);
+
+      const userPayload: SupabaseUser = {
+        ...user[0],
+        collaborating: [...(user[0].collaborating || []), docId].filter(
+          function (elem, index, self) {
+            return index === self.indexOf(elem);
+          },
+        ),
+      };
+
+      const trextPayload: Trext = {
+        ...trext[0],
+        collaboraters: [...(trext[0].collaboraters || []), id].filter(
+          function (elem, index, self) {
+            return index === self.indexOf(elem);
+          },
+        ),
+      };
+
+      setSharedTrexts([...sharedTrexts, trextPayload]);
+      setPayloads([...payloads, userPayload]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const done = async () => {
+    const supabaseDB: SupabaseDB = new SupabaseDB();
+
+    for (let i = 0; i < payloads.length; i++) {
+      await supabaseDB.update("id", payloads[i].id, payloads[i], {
         table: "User",
-      },
-    );
+      });
 
-    const trext: Trext[] = await supabaseDB.read<Trext[]>("id", docId);
+      await supabaseDB.update("id", sharedTrexts[i].id!, sharedTrexts[i]);
+    }
 
-    const payload: SupabaseUser = {
-      ...user[0],
-      collaborating: [...(user[0].collaborating || []), docId].filter(
-        function (elem, index, self) {
-          return index === self.indexOf(elem);
-        },
-      ),
-    };
-
-    const trextPayload: Trext = {
-      ...trext[0],
-      collaboraters: [...(trext[0].collaboraters || []), id].filter(
-        function (elem, index, self) {
-          return index === self.indexOf(elem);
-        },
-      ),
-    };
-
-    await supabaseDB.update("id", id, payload, {
-      table: "User",
-    });
-
-    await supabaseDB.update("id", docId, trextPayload);
+    onCloseModal();
   };
 
   React.useEffect(() => {
@@ -141,7 +158,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ docId }) => {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button onClick={onCloseModal} variant="flat">
+                <Button onClick={done} variant="flat">
                   Done
                 </Button>
               </ModalFooter>

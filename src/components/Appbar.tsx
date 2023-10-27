@@ -12,6 +12,7 @@ interface AppBarProps {
   setEditTitle: (val: boolean) => void;
   setShowBar: React.Dispatch<React.SetStateAction<boolean>>;
   onChange: (val: string) => void;
+  isShared: boolean;
 }
 
 const AppBar: React.FC<AppBarProps> = ({
@@ -21,6 +22,7 @@ const AppBar: React.FC<AppBarProps> = ({
   setEditTitle,
   setShowBar,
   onChange,
+  isShared,
 }) => {
   return (
     <Card
@@ -54,7 +56,7 @@ const AppBar: React.FC<AppBarProps> = ({
           </Button>
         </div>
       </div>
-      <ShareButton docId={docId} />
+      {isShared ? undefined : <ShareButton docId={docId} />}
     </Card>
   );
 };

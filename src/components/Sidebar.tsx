@@ -7,9 +7,19 @@ import { MdNotificationsActive } from "react-icons/md";
 import { BsFillGearFill } from "react-icons/bs";
 import { IconType } from "react-icons";
 import { AiTwotoneEdit } from "react-icons/ai";
-import { Avatar, AvatarIcon, Tooltip } from "@nextui-org/react";
+import {
+  Avatar,
+  Tooltip,
+  Modal,
+  ModalHeader,
+  ModalContent,
+  ModalFooter,
+  ModalBody,
+  useDisclosure,
+} from "@nextui-org/react";
 import { useAppContext } from "@/pages/_app";
 import SupabaseDB from "@/lib/supabase-client";
+import supabase from "@/lib/supabase";
 
 interface SidebarProps {
   router: NextRouter;
@@ -47,6 +57,7 @@ const IconButton: React.FC<IconProps> = ({
 const Sidebar: React.FC<SidebarProps> = ({ router }) => {
   const { state, setState } = useAppContext();
   const supabaseDB: SupabaseDB = new SupabaseDB();
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const createNewEditor = async () => {
     const [id, payload] = await supabaseDB.createNewEditor();
@@ -68,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
   };
 
   const navigate = (route: string): void => {
-    const isCreateNewEditor = route === "/editor";
+    const isCreateNewEditor = route === "/editor/new";
     if (!isCreateNewEditor) {
       router.push(route);
     } else {
@@ -77,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
   };
 
   return (
-    <div className="h-full w-20 flex flex-col gap-12 items-center pt-4 bg-white">
+    <div className="h-full w-20 flex flex-col gap-12 items-center pt-4 bg-white relative">
       <span className={`${pacifico.className} text-2xl`}>TE.</span>
       <div className="flex flex-col gap-8 w-full items-center">
         <IconButton
@@ -96,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
               ? state.trexts[0].id
               : state.sharedTrexts && state.sharedTrexts.length > 0
               ? state.sharedTrexts[0].id + "?shared=true"
-              : "/editor"
+              : "/editor/new"
           }`}
           activePath={router.pathname}
         />
@@ -108,19 +119,29 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
           activePath={router.pathname}
         />
       </div>
-
       <div className="mt-auto mb-10 flex flex-col w-auto items-center gap-8">
         <Tooltip content="Notifications" placement={"right"}>
           <div>
             <MdNotificationsActive
               className="cursor-pointer"
               size={"25px"}
-              onClick={() => {
-                console.log("Notifcation onClick");
-              }}
+              onClick={onOpen}
             />
           </div>
         </Tooltip>
+        <Modal backdrop="blur" onOpenChange={onOpenChange} isOpen={isOpen}>
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader>Notifications</ModalHeader>
+                <ModalBody>
+                  <div>This is the body</div>
+                </ModalBody>
+                <ModalFooter>This is the footer</ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
         <Tooltip content="Settings" placement={"right"}>
           <div>
             <BsFillGearFill
@@ -133,7 +154,12 @@ const Sidebar: React.FC<SidebarProps> = ({ router }) => {
         <Tooltip content="Profile" placement={"right"}>
           <Avatar
             className="cursor-pointer"
-            onClick={() => router.push("/profile")}
+            onClick={() => {
+              supabase.auth.signOut().then(() => {
+                window.localStorage.setItem("token", JSON.stringify(false));
+                location.reload();
+              });
+            }}
             src={state.user ? state.user.avatar_url : ""}
             classNames={{
               icon: "text-black/80",

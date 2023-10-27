@@ -25,6 +25,7 @@ const useSupabaseAuth = () => {
             trext_count: 0,
             collaborating: [],
             created_at: new Date().toISOString(),
+            notifications: [],
           };
 
           const registered: boolean = await supabaseDB.upload<SupabaseUser>(

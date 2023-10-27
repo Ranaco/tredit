@@ -33,7 +33,6 @@ const Main: React.FC<MainProps> = ({ router, children }) => {
         className={`w-full h-full flex flex-row overflow-x-hidden ${inter.className}`}
       >
         <Sidebar router={router} />
-        <Divider orientation="vertical" />
         {children}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { pacifico } from "@/components/layout/main";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import supabase from "@/lib/supabase";
 import type { Provider } from "@supabase/supabase-js";
+import { useRouter } from "next/router";
 
 type formStateType = {
   email: string;
@@ -18,6 +19,8 @@ const Login = () => {
     email: "",
     password: "",
   });
+
+  const router = useRouter();
 
   const login = async (provider: Provider) => {
     try {
@@ -43,6 +46,15 @@ const Login = () => {
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormState((val) => ({ ...val, [e.target.name]: e.target.value }));
   };
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isRegistered = JSON.parse(window.localStorage.getItem("token")!);
+      if (isRegistered) {
+        router.replace("/home");
+      }
+    }
+  }, []);
 
   return (
     <div className="flex flex-row h-screen w-screen">

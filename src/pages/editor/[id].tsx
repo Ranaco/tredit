@@ -98,8 +98,8 @@ const EditorPage: NextPage = () => {
     //   }
     // });
 
+    const shared = JSON.parse((router.query.shared || "false") as string);
     const handleRender = () => {
-      const shared = JSON.parse((router.query.shared || "false") as string);
       if (state.trexts && !shared) {
         setTitle(state.trexts.filter((val) => val.id == currId)[0]?.title);
         setOutputData(
@@ -176,6 +176,7 @@ const EditorPage: NextPage = () => {
       <div className="h-full w-full flex flex-col items-center justify-start">
         <div className="h-12 w-full">
           <AppBar
+            isShared={JSON.parse((router.query.shared || "false") as string)}
             docId={router.query.id as string}
             onChange={onTitleChange}
             setShowBar={setShowBar}
